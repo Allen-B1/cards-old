@@ -6,8 +6,12 @@ class Game extends EventEmitter {
 		return this._players;
 	}
 	addPlayer(player) {
-		this._players.push(player);
-		this.emit("player", this._players.length - 1, player);
+		if(!this._started) {
+			this._players.push(player);
+			this.emit("player", this._players.length - 1, player);
+		} else {
+			throw new Error;
+		}
 	}
 	
 	get turn() {
@@ -39,8 +43,7 @@ class PresGame extends Game {
 		this.stackTop = null;
 
 		this.on("move", (playerId, move) {
-			if(this.stackTop == null)
-				this.stackTop = move;			
+			this.stackTop = move;			
 		});
 	}
 	isLegalMove(move) {
