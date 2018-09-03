@@ -81,7 +81,10 @@ class PresGame extends Game {
 	deal() {
 		// Create a hand for each player
 		this.hands = Array(this.playerNames.length);
-		this.hands.fill([]);
+		this.hands.fill(null);
+		this.hands.forEach((hand, player) => {
+			this.hands[player] = [];
+		});
 
 		// Deal out deck
 		// TODO: Jokers
