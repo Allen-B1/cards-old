@@ -49,21 +49,26 @@ function start(id) {
 }
 
 function newRoom(id) {
-	rooms[id] = {};
-	rooms[id].sockets = [];
-	rooms[id].names = [];
-	rooms[id].game = null;
-	rooms[id].startSet = new Set();
-	rooms[id].id = id;
+	if(!(id in rooms)) {
+		rooms[id] = {};
+		rooms[id].sockets = [];
+		rooms[id].names = [];
+		rooms[id].game = null;
+		rooms[id].startSet = new Set();
+		rooms[id].id = id;
+	}
+	return rooms[id];
 }
 
 newRoom("game");
 
-io.of("/game").on("connection", (socket) => {
+io.on("connection", (socket) => {
+	console.log("Connection");
 	socket.on("player", function(name) {
+		console.log("Player: ", name);
 		socket.join("game");
-		var room = rooms["game"];
-		if(room.game != null) {
+		var room = newRoom("game");
+		if(room.game == null) {
 			room.names.push(name);
 			const index = room.names.length - 1;
 			room.sockets[index] = socket;
