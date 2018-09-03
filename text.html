@@ -87,12 +87,16 @@
 		});
 
 		socket.on("move", function(move, player) {
-			addMessage(names[player] + ": move " + move.join(" "), "lightblue");
-			if(player === me) {
-				move.forEach(function(card) {
-					var index = hand.indexOf(card);
-					hand.splice(index, 1);
-				});
+			if(move === null) {
+				addMessage(names[player] + ": pass");
+			} else {
+				addMessage(names[player] + ": move " + move.join(" "), "lightblue");
+				if(player === me) {
+					move.forEach(function(card) {
+						var index = hand.indexOf(card);
+						hand.splice(index, 1);
+					});
+				}
 			}
 		});
 		socket.on("move_error", function(msg) {
