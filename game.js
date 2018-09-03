@@ -1,86 +1,22 @@
 "use strict";
 // Handles players and starts
 class Game {
-	/* Move. Returns true if valid, false if not */
-	move(player, move) {
-		return true;
-	}
-
-	/* Called when starting */
-	deal() {}
-
-	constructor(players) {
-		this.turn = 0;
-		this.playerNames = players;
-	}
-}
-
-class PresGame extends Game {
-	constructor(players) {
-		super(players);
-		this.stack = [];
-		this.mode = null;
-		this.hands = [];
-		this.deal();
-	}
 	/* Move.
 	 *
 	 * player - player index
 	 * move - array of cards
 	 * move can be null; in which case this is a pass
+	 *
+	 * Returns: the error as a string or null if none or true if won
 	 */
 	move(player, move) {
-		if(!this.started)
-			return false;
-
-		if(this.move == null) {
-			this.turn = (this.turn + 1) % this.playerNames.length;
-			return true;
-		}
-
-		if(this.mode === null) {
-			this.mode = move.length;
-		}
-		// If cards are not in hand, return false
-		for(let card of move) {
-			if(!this.hands[player].includes(card)) {
-				return false;
-			}
-		}
-		// Remove cards from hand
-		for(let card of move) {
-			var index = this.hands[player].indexOf(card)
-			this.hands[player].splice(index, 1);
-		}
-
-		if(this.turn == player && isValid(move, this.mode, this.stack)) {
-			this.turn = (this.turn + 1) % this.playerNames.length;
-			this.stack.push(move);
-			super.move(player, move);
-			return true;
-		} else {
-			return false;
-		}
+		return null;
 	}
-	static isValid(move, mode, stack) {
-		// If wrong number of cards, return
-		if(move.length !== mode)
-			return false;
-		// Check if all the card(s) have the same face value
-		for(var i = 1; i < move.length; i++) {
-			if(move[i][0] !== move[i - 1][0]) {
-				return false;
-			}
-		}
-		// Check if card(s) are greater than previous card(s)
-		if(move[0] < stack[stack.length - 1]) {
-			return false;
-		}
-		return true;
-	}
+
+	/* Deal cards. To be used internally. Creates this.hands */
 	deal() {
 		// Create a hand for each player
-		this.hands = Array(this.playerNames.length);
+		this.hands = Array(this.players);
 		this.hands.fill(null);
 		this.hands.forEach((hand, player) => {
 			this.hands[player] = [];
@@ -93,14 +29,90 @@ class PresGame extends Game {
 		var player = 0;
 		while(deck.length) {
 			this.hands[player].push(deck.pop());
-			player = (player + 1) % this.playerNames.length;
+			player = (player + 1) % this.players;
 		}
 
 		this.turn = 0;
-
-		super.deal();
 	}
 
+	/* Creates a new game. Players is the number of players */
+	constructor(players) {
+		this.turn = 0;
+		this.players = players;
+	}
+}
+
+class PresGame extends Game {
+	constructor(players) {
+		super(players);
+		this.stack = [];
+		this.mode = null;
+		this.winners = [];
+		this.deal();
+	}
+
+	move(player, move) {
+		if(this.move == null) {
+			this.turn = (this.turn + 1) % this.players;
+			return null;
+		}
+
+		if(this.mode === null) {
+			this.mode = move.length;
+		}
+		// If cards are not in hand, return false
+		for(let card of move) {
+			if(this.hands[player].indexOf(card) === -1) {
+				return "Cannot summon cards out of thin air";
+			}
+		}
+		// Remove cards from hand
+		for(let card of move) {
+			var index = this.hands[player].indexOf(card);
+			this.hands[player].splice(index, 1);
+		}
+
+		if(this.turn == player)
+			return "Out of turn";
+	
+		if(PresGame.isValid(move, this.mode, this.stack)) {
+			this.turn = (this.turn + 1) % this.players;
+			this.stack.push(move);
+
+			// If no more cards won
+			if(this.hands[player].length === 0) {
+				this.winners.push(x);
+				return true;
+			}
+
+			super.move(player, move);
+			return null;
+		} else {
+			return "Bad play";
+		}
+	}
+
+	static isValid(move, mode, stack) {
+		// If wrong number of cards and not bomb, return
+		if(move.length !== mode && move[0][0] !== "2")
+			return false;
+
+		// Cannot bomb multiple times
+		if(move[0][0] === "2" && move.length > 1)
+			return false;
+
+		// Check if all the card(s) have the same face value
+		for(var i = 1; i < move.length; i++) {
+			if(move[i][0] !== move[i - 1][0]) {
+				return false;
+			}
+		}
+		// Check if card(s) are greater/equal than previous card(s)
+		if(stack.length !== 0 && Cards.compare(move[0], stack[stack.length - 1]) < 0) {
+			return false;
+		}
+		return true;
+	}
 }
 
 const Cards = {
@@ -142,6 +154,13 @@ const Cards = {
 		    a[j] = x;
 		}
 		return a;
+	},
+	compare: function(a, b) {
+		var valA = a.slice(0, -1);
+		var valB = b.slice(0, -1);
+		var key = {
+			2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,"J":11,"Q":12,"K":13,"A":14};
+		return key[valA] - key[valB];
 	}
 };
 

@@ -23,7 +23,7 @@ var rooms = {};
 const io = require('socket.io')(server);
 
 function start(room) {
-	var game = room.game = new gamelib.PresGame(room.names);
+	var game = room.game = new gamelib.PresGame(room.names.length);
 
 	// For each player and socket
 	room.sockets.forEach((socket, player) => {
@@ -39,12 +39,17 @@ function start(room) {
 				hands[hand_player].fill(null);
 			}
 		});
-		socket.emit("start", player, hands);
+		socket.emit("start", player, room.names, hands);
+
+		// When move recieved
+		socket.on("move", (move) => {
+			let err = game.move(player, move);
+			if(err === null) // valid
+				io.to(room.id).emit("move", move, player);
+			else  // invalid
+				socket.emit("move_error", err);
+		});
 	});
-
-	console.log("Game started");
-
-	room.sockets[game.turn].emit("turn");
 }
 
 function newRoom(id) {
@@ -112,7 +117,7 @@ io.on("connection", (socket) => {
 				}
 			});
 		} else {
-			socket.emit("error_join", "Game already started!");
+			socket.emit("join_error", "Game already started!");
 		}
 	});
 
