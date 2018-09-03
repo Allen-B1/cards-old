@@ -30,23 +30,25 @@
 
 		var pname = null;
 		$('form').submit(function(){
-				var message = $('#m').val();
-				if(pname === null) {
-						socket.emit('player', message, 'game');
-						pname = message;
-						addMessage(pname);
+			var message = $('#m').val();
+			if(pname === null) {
+				socket.emit('player', message, 'game');
+				pname = message;
+				addMessage(pname);
+			} else {
+				if(message.toLowerCase() == "start" && !started) {
+					socket.emit("set_start");
+				} else if(message.toLowerCase().startsWith("move ") && started) {
+					var move = message.slice(5).toUpperCase().trim();
+					socket.emit("move", move.split(" "));
+				} else if(message.toLowerCase() === "pass" && started) {
+					socket.emit("move", null);
+				} else if(message.toLowerCase() === "hand" && started) {
+					addMessage(hand.join(" "), "lightblue");
 				} else {
-						if(message.toLowerCase() == "start" && !started) {
-							socket.emit("set_start");
-						} else if(message.toLowerCase().startsWith("move ") && started) {
-							var move = message.slice(5).toUpperCase().trim();
-							socket.emit("move", move.split(" "));
-						} else if(message.toLowerCase() === "pass") {
-							socket.emit("move", null);
-						} else {
-							socket.emit("chat", message);
-						}
+					socket.emit("chat", message);
 				}
+			}
 			$('#m').val('');
 			return false;
 		});
