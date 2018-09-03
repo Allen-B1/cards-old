@@ -1,61 +1,27 @@
 "use strict";
 // Handles players and starts
 class Game {
-	get playerNames() {
-		return this._players;
-	}
-	addPlayer(playerName) {
-		if(!this.started) {
-			this._players.push(player);
-			// Return index of player
-			return this.playerNames.length - 1;
-		} else {
-			throw "game has started";
-		}
-	}
-	/* Number of players */
-	get players() {
-		return this._players.length;
-	}
-
-	/* Whether the game has started */
-	get started() {
-		return this._started;
-	}
-	
-	/* Start the game */
-	start() {
-		this._started = true;
-	}
-
-	/* Get whose turn it is (as an index) */
-	get turn() {
-		return this._turn;
-	}
-
-	// protected
-	set turn(val) {
-		this._turn = val;
-	}
-
 	/* Move. Returns true if valid, false if not */
 	move(player, move) {
 		return true;
 	}
 
-	constructor() {
-		this._started = false;
-		this._turn = 0;
-		this._players = [];
+	/* Called when starting */
+	deal() {}
+
+	constructor(players) {
+		this.turn = 0;
+		this.playerNames = players;
+		this.deal();
 	}
 }
 
 class PresGame extends Game {
-	constructor() {
-		super();
+	constructor(players) {
+		super(players);
 		this.stack = [];
 		this.mode = null;
-		this.playerHands = [];
+		this.hands = [];
 	}
 	/* Move.
 	 *
@@ -64,12 +30,31 @@ class PresGame extends Game {
 	 * move can be null; in which case this is a pass
 	 */
 	move(player, move) {
+		if(!this.started)
+			return false;
+
+		if(this.move == null) {
+			this.turn = (this.turn + 1) % this.playerNames.length;
+			return true;
+		}
+
 		if(this.mode === null) {
 			this.mode = move.length;
 		}
+		// If cards are not in hand, return false
+		for(let card of move) {
+			if(!this.hands[player].includes(card)) {
+				return false;
+			}
+		}
+		// Remove cards from hand
+		for(let card of move) {
+			var index = this.hands[player].indexOf(card)
+			this.hands[player].splice(index, 1);
+		}
 
-		if(this.turn == player) {
-			this.turn = (this.turn + 1) % this.players;
+		if(this.turn == player && isValid(move, this.mode, this.stack)) {
+			this.turn = (this.turn + 1) % this.playerNames.length;
 			this.stack.push(move);
 			super.move(player, move);
 			return true;
@@ -93,19 +78,22 @@ class PresGame extends Game {
 		}
 		return true;
 	}
-	start() {
+	deal() {
 		// Create a hand for each player
-		this.playerHands = [].repeat(this.players);
+		this.hands = [].repeat(this.playerNames.length);
 
 		// Deal out deck
-		var deck = Cards.createFullDeckJokers();
+		// TODO: Jokers
+		var deck = Cards.createFullDeck();
 		Cards.shuffle(deck);
 		while(deck.length) {
 			var player = 0;
-			this.playerHands[player].push(deck.pop());
+			this.hands[player].push(deck.pop());
 			player = (player + 1) % this.players;
 		}
-		super.start();
+
+		this.turn = 0;
+		super.deal();
 	}
 
 }
@@ -140,9 +128,12 @@ const Cards = {
 		return String(val) + suit;
 	},
 	shuffle: function(a) {
-		for (let i = a.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[a[i], a[j]] = [a[j], a[i]];
+		var j, x, i;
+		for (i = a.length - 1; i > 0; i--) {
+		    j = Math.floor(Math.random() * (i + 1));
+		    x = a[i];
+		    a[i] = a[j];
+		    a[j] = x;
 		}
 		return a;
 	}
