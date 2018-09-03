@@ -73,7 +73,6 @@ function clearRoom(id) {
 
 io.on("connection", (socket) => {
 	socket.on("player", function(name, roomId) {
-		console.log("Player: ", name);
 		socket.join(roomId);
 		var room = newRoom(roomId);
 

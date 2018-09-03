@@ -52,13 +52,13 @@ class PresGame extends Game {
 	}
 
 	move(player, move) {
+		if(this.turn !== player)
+			return "Out of turn";
+
 		if(move == null) {
 			this.turn = (this.turn + 1) % this.players;
 			return null;
 		}
-
-		if(this.turn !== player)
-			return "Out of turn";
 
 		// If cards are not in hand, return false
 		for(let card of move) {
@@ -105,7 +105,6 @@ class PresGame extends Game {
 	}
 
 	static isValid(move, mode, stack) {
-		console.log(stack, move);
 		// If wrong number of cards and not bomb, return
 		if(move.length !== mode && mode !== null && move[0][0] !== "2")
 			return false;
