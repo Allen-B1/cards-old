@@ -12,7 +12,6 @@ class Game {
 	constructor(players) {
 		this.turn = 0;
 		this.playerNames = players;
-		this.deal();
 	}
 }
 
@@ -22,6 +21,7 @@ class PresGame extends Game {
 		this.stack = [];
 		this.mode = null;
 		this.hands = [];
+		this.deal();
 	}
 	/* Move.
 	 *
@@ -80,19 +80,21 @@ class PresGame extends Game {
 	}
 	deal() {
 		// Create a hand for each player
-		this.hands = [].repeat(this.playerNames.length);
+		this.hands = Array(this.playerNames.length);
+		this.hands.fill([]);
 
 		// Deal out deck
 		// TODO: Jokers
 		var deck = Cards.createFullDeck();
 		Cards.shuffle(deck);
+		var player = 0;
 		while(deck.length) {
-			var player = 0;
 			this.hands[player].push(deck.pop());
-			player = (player + 1) % this.players;
+			player = (player + 1) % this.playerNames.length;
 		}
 
 		this.turn = 0;
+
 		super.deal();
 	}
 
@@ -103,9 +105,10 @@ const Cards = {
 	// create a full deck, excluding jokers
 	createFullDeck: function() {
 		var deck = [];
-		for(val of VALS) {
-			for(suit in [1,2,3,4]) {
-				deck.append(this.createCard(val, suit));
+		for(let val of this.VALS) {
+			for(let suitname in Suit) {
+				let suit = Suit[suitname];
+				deck.push(this.createCard(val, suit));
 			}
 		}
 		return deck;
@@ -140,9 +143,10 @@ const Cards = {
 };
 
 const Suit = {
-	NONE: 0,
-	SPADES: 1,
-	CLUBS: 2,
-	HEARTS: 3,
-	DIAMONDS: 4
-}
+	SPADES: "S",
+	CLUBS: "C",
+	HEARTS: "H",
+	DIAMONDS: "D"
+};
+
+module.exports = {Suit: Suit, Cards:Cards, Game:Game, PresGame:PresGame};

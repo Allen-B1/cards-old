@@ -1,3 +1,4 @@
+"use strict";
 const http = require('http');
 const fs = require('fs');
 const gamelib = require("./game.js");
@@ -21,15 +22,14 @@ server.listen(8000, () => {
 var rooms = {};
 const io = require('socket.io')(server);
 
-function start(id) {
-	var sockets = rooms[id].sockets;
-	var names = rooms[id].names;
-	var game = rooms[id].game = gamelib.PresGame(names);
-	
+function start(room) {
+	var game = room.game = new gamelib.PresGame(room.names);
+
 	// For each player and socket
-	sockets.forEach((socket, player) => {
+	room.sockets.forEach((socket, player) => {
 		// Create object to feed containing only the hand of the player, and null for everything else
-		var hands = Array(names.length);
+		var hands = Array(room.names.length);
+		hands.fill(null);
 		hands.forEach((hand, hand_player) => {
 			if(player === hand_player) {
 				hands[hand_player] = game.hands[hand_player];
@@ -39,13 +39,12 @@ function start(id) {
 				hands[hand_player].fill(null);
 			}
 		});
-		socket.emit("start", hands);
+		socket.emit("start", player, hands);
 	});
 
-	console.log("started", id);
+	console.log("Game started");
 
-
-	sockets[game.turn].emit("turn");
+	room.sockets[game.turn].emit("turn");
 }
 
 function newRoom(id) {
@@ -54,34 +53,70 @@ function newRoom(id) {
 		rooms[id].sockets = [];
 		rooms[id].names = [];
 		rooms[id].game = null;
-		rooms[id].startSet = new Set();
+		rooms[id].started = [];
 		rooms[id].id = id;
 	}
 	return rooms[id];
 }
 
-newRoom("game");
-
 io.on("connection", (socket) => {
-	console.log("Connection");
-	socket.on("player", function(name) {
+	socket.on("player", function(name, roomId) {
 		console.log("Player: ", name);
-		socket.join("game");
-		var room = newRoom("game");
+		socket.join(roomId);
+		var room = newRoom(roomId);
+
+		// Handling chat
+		socket.on("chat", function(msg) {
+			var index = room.sockets.indexOf(socket);
+			io.to(room.id).emit("chat", msg, room.names[index]);
+		});
+
+		// If the game hasn't started
 		if(room.game == null) {
+			// Add the player to the room
 			room.names.push(name);
-			const index = room.names.length - 1;
+			let index = room.names.length - 1;
 			room.sockets[index] = socket;
-			socket.on("start", function() {
-				room.startSet.add(index);
-				if(room.startSet.length == room.names.length || room.startSet.length >= 4) {
-					start(room.id);
+			room.started[index] = false;
+
+			// Broadcast new player
+			io.to(room.id).emit("player", name);
+
+			/* When socket sets force start */
+			socket.on("set_start", function() {
+				if(room.game !== null)
+					return;
+
+				var index = room.sockets.indexOf(socket);
+				room.started[index] = true;
+
+				var nstarted = room.started.reduce((acc, val) => acc + val, 0);
+				var required = Math.max(room.names.length >= 4 ? room.names.length - 1 : room.names.length, 2);
+				io.to(room.id).emit("set_start", room.names[index], [nstarted, required]);
+
+				if(nstarted >= required) {
+					start(room);
+				}
+			});
+
+			socket.on("disconnect", function() {
+				var index = room.sockets.indexOf(socket);
+				if(room.game === null) {
+					io.to(room.id).emit("player_left", room.names[index], null);
+
+					room.sockets.splice(index, 1);
+					room.names.splice(index, 1);
+					room.started.splice(index, 1);
+				} else {
+					io.to(room.id).emit("player_left", room.names[index], index);					
 				}
 			});
 		} else {
-			socket.emit("error", "Game already started!");
+			socket.emit("error_join", "Game already started!");
 		}
 	});
+
+
 });
 
 
