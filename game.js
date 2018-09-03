@@ -48,6 +48,7 @@ class PresGame extends Game {
 		this.stack = [];
 		this.mode = null;
 		this.winners = [];
+		this.passes = new Set();
 		this.deal();
 	}
 

@@ -5,9 +5,9 @@
 		<style>
 			* { margin: 0; padding: 0; box-sizing: border-box; }
 			body { font: 13px monospace; background: #000; color: #FFF; }
-			form { position: fixed; bottom: 0; width: 100%; }
-			form input { border: 0; padding: 8px 16px; width: 90%; background: transparent; color: #FFF; outline:none; font: 13px monospace; }
-			form button { width: 9%; background: #555; color:#FFF; border: none; padding: 8px 16px; cursor: pointer; font-family: monospace; }
+			#form { position: fixed; bottom: 0; width: 100%; }
+			#form input { border: 0; padding: 8px 16px; width: 90%; background: transparent; color: #FFF; outline:none; font: 13px monospace; }
+			#form button { width: 9%; background: #555; color:#FFF; border: none; padding: 8px 16px; cursor: pointer; font-family: monospace; }
 			#messages { list-style-type: none; margin: 0; padding: 0; }
 			#messages li { padding: 4px 0; }
 			#messages { padding: 12px 16px; margin-bottom: 40px; }
@@ -15,9 +15,9 @@
 	</head>
 	<body>
 		<ul id="messages"></ul>
-		<form action="">
-			<input id="m" autocomplete="off" /><button>Send</button>
-		</form>
+		<div id="form">
+			<input id="m" autocomplete="off" /><button id="send">Send</button>
+		</div>
 		<script src="/socket.io.js"></script>
 		<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 		<script>
@@ -28,13 +28,12 @@
 		var hand = null;
 		var me = null;
 
-		var pname = null;
-		$('form').submit(function(){
+		$('#send').click(function func() {
 			var message = $('#m').val();
-			if(pname === null) {
+			if(func.pname == null) {
 				socket.emit('player', message, 'game');
-				pname = message;
-				addMessage(pname);
+				func.pname = message;
+				addMessage("Your name is " + func.pname);
 			} else {
 				if(message.toLowerCase() == "start" && !started) {
 					socket.emit("set_start");
@@ -50,13 +49,12 @@
 				}
 			}
 			$('#m').val('');
-			return false;
 		});
 		function addMessage(msg, color) {
 			$('#messages').append($('<li>').text(msg).css("color", color));
 			window.scrollTo(0, document.body.scrollHeight);
 		}
-		addMessage("What's your name?");
+		addMessage("What's your name?", "lime");
 		socket.on("chat", function(msg, player) {
 			addMessage(player + ": " + msg);
 		});
@@ -90,7 +88,7 @@
 
 		socket.on("move", function(move, player) {
 			if(move === null) {
-				addMessage(names[player] + ": pass");
+				addMessage(names[player] + ": pass", "cyan");
 			} else {
 				addMessage(names[player] + ": move " + move.join(" "), "cyan");
 				if(player === me) {
@@ -101,8 +99,8 @@
 				}
 			}
 		});
-		socket.on("move_error", function(msg) {
-			addMessage(msg, "red");
+		socket.on("move_error", function(move, msg) {
+			addMessage(names[me] + ": " + (move === null ? "pass" : move.join(" ")) + ": " + msg, "red");
 		});
 		socket.on("join_error", function(msg) {
 			addMessage(msg, "red");

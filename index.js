@@ -47,7 +47,7 @@ function start(room) {
 			if(err === null) // valid
 				io.to(room.id).emit("move", move, player);
 			else  // invalid
-				socket.emit("move_error", err);
+				socket.emit("move_error", move, err);
 		});
 	});
 }
