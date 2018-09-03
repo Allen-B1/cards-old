@@ -57,31 +57,38 @@ class PresGame extends Game {
 			return null;
 		}
 
-		if(this.mode === null) {
-			this.mode = move.length;
-		}
+		if(this.turn !== player)
+			return "Out of turn";
+
 		// If cards are not in hand, return false
 		for(let card of move) {
 			if(this.hands[player].indexOf(card) === -1) {
 				return "Cannot summon cards out of thin air";
 			}
 		}
+
 		// Remove cards from hand
 		for(let card of move) {
 			var index = this.hands[player].indexOf(card);
 			this.hands[player].splice(index, 1);
 		}
 
-		if(this.turn == player)
-			return "Out of turn";
-	
 		if(PresGame.isValid(move, this.mode, this.stack)) {
-			this.turn = (this.turn + 1) % this.players;
 			this.stack.push(move);
+
+			if(this.mode === null) {
+				this.mode = move.length;
+			}
+
+			if(move[0][0] === "2") {
+				bomb();
+			} else {
+				this.turn = (this.turn + 1) % this.players;
+			}
 
 			// If no more cards won
 			if(this.hands[player].length === 0) {
-				this.winners.push(x);
+				this.winners.push(player);
 				return true;
 			}
 
@@ -92,9 +99,15 @@ class PresGame extends Game {
 		}
 	}
 
+	bomb() {
+		this.mode = null;
+		this.stack = [];
+	}
+
 	static isValid(move, mode, stack) {
+		console.log(stack, move);
 		// If wrong number of cards and not bomb, return
-		if(move.length !== mode && move[0][0] !== "2")
+		if(move.length !== mode && mode !== null && move[0][0] !== "2")
 			return false;
 
 		// Cannot bomb multiple times
@@ -108,7 +121,7 @@ class PresGame extends Game {
 			}
 		}
 		// Check if card(s) are greater/equal than previous card(s)
-		if(stack.length !== 0 && Cards.compare(move[0], stack[stack.length - 1]) < 0) {
+		if(stack.length !== 0 && Cards.compare(move[0], stack[stack.length - 1][0]) < 0) {
 			return false;
 		}
 		return true;

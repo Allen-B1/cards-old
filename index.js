@@ -64,6 +64,13 @@ function newRoom(id) {
 	return rooms[id];
 }
 
+function clearRoom(id) {
+	rooms[id].sockets = [];
+	rooms[id].names = [];
+	rooms[id].game = null;
+	rooms[id].started = [];
+}
+
 io.on("connection", (socket) => {
 	socket.on("player", function(name, roomId) {
 		console.log("Player: ", name);
@@ -113,11 +120,17 @@ io.on("connection", (socket) => {
 					room.names.splice(index, 1);
 					room.started.splice(index, 1);
 				} else {
-					io.to(room.id).emit("player_left", room.names[index], index);					
+					io.to(room.id).emit("player_left", room.names[index], index);
+					room.names[index] = null;
+					// If everyone left
+					if(room.names.every((v) => v === null)) {
+						clearRoom(room.id);
+					}
 				}
 			});
 		} else {
 			socket.emit("join_error", "Game already started!");
+			socket.disconnect(false);
 		}
 	});
 
