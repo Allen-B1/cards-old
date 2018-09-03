@@ -44,7 +44,7 @@
 				} else if(message.toLowerCase() === "pass" && started) {
 					socket.emit("move", null);
 				} else if(message.toLowerCase() === "hand" && started) {
-					addMessage(hand.join(" "), "lightblue");
+					addMessage(hand.join(" "), "cyan");
 				} else {
 					socket.emit("chat", message);
 				}
@@ -85,14 +85,14 @@
 				return key[valA] - key[valB];
 			});
 			hand = hands[id];
-			addMessage(hand.join(" "), "lightblue");
+			addMessage(hand.join(" "), "cyan");
 		});
 
 		socket.on("move", function(move, player) {
 			if(move === null) {
 				addMessage(names[player] + ": pass");
 			} else {
-				addMessage(names[player] + ": move " + move.join(" "), "lightblue");
+				addMessage(names[player] + ": move " + move.join(" "), "cyan");
 				if(player === me) {
 					move.forEach(function(card) {
 						var index = hand.indexOf(card);
