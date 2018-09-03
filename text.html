@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Pres</title>
+		<style>
+			* { margin: 0; padding: 0; box-sizing: border-box; }
+			body { font: 13px monospace; background: #000; color: #FFF; }
+			form { position: fixed; bottom: 0; width: 100%; }
+			form input { border: 0; padding: 8px 16px; width: 90%; background: transparent; color: #FFF; outline:none; }
+			form button { width: 9%; background: #555; color:#FFF; border: none; padding: 8px 16px; }
+			#messages { list-style-type: none; margin: 0; padding: 0; }
+			#messages li { padding: 4px 0; }
+			#messages { padding: 12px 16px; margin-bottom: 40px; }
+		</style>
+	</head>
+	<body>
+		<ul id="messages"></ul>
+		<form action="">
+			<input id="m" autocomplete="off" /><button>Send</button>
+		</form>
+		<script src="/socket.io.js"></script>
+		<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+		<script>
+		"use strict";
+		var socket = io();
+		var started = false;
+		var names = [];
+		var hand = null;
+		var me = null;
+
+		var pname = null;
+		$('form').submit(function(){
+				var message = $('#m').val();
+				if(pname === null) {
+						socket.emit('player', message, 'game');
+						pname = message;
+						addMessage(pname);
+				} else {
+						if(message.toLowerCase() == "start" && !started) {
+							socket.emit("set_start");
+						} else if(message.toLowerCase().startsWith("move ") && started) {
+							var move = message.slice(5).toUpperCase().trim();
+							socket.emit("move", move.split(" "));
+						} else if(message.toLowerCase() === "pass") {
+							socket.emit("move", null);
+						} else {
+							socket.emit("chat", message);
+						}
+				}
+			$('#m').val('');
+			return false;
+		});
+		function addMessage(msg, color) {
+			$('#messages').append($('<li>').text(msg).css("color", color));
+			window.scrollTo(0, document.body.scrollHeight);
+		}
+		addMessage("What's your name?");
+		socket.on("chat", function(msg, player) {
+			addMessage(player + ": " + msg);
+		});
+		socket.on('player', function(player){
+			addMessage(player + " joined", "lime");
+		});
+		socket.on('player_left', function(player) {
+			addMessage(player + " left", "lime");
+		});
+		socket.on('set_start', function(player, stats) {
+			addMessage(player + ": start (" + stats[0] + "/" + stats[1] + ")", "yellow");
+		});
+
+		socket.on("start", function(id, pnames, hands) {
+			started = true;
+			names = pnames;
+			me = id;
+
+			addMessage("Game starting with " + names.join(", "), "lime");
+
+			hands[id].sort((a, b) => {
+				var valA = a.slice(0, -1);
+				var valB = b.slice(0, -1);
+				var key = {
+					2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,"J":11,"Q":12,"K":13,"A":14};
+				return key[valA] - key[valB];
+			});
+			hand = hands[id];
+			addMessage(hand.join(" "), "lightblue");
+		});
+
+		socket.on("move", function(move, player) {
+			addMessage(names[player] + ": move " + move.join(" "), "lightblue");
+			if(player === me) {
+				move.forEach(function(card) {
+					var index = hand.indexOf(card);
+					hand.splice(index, 1);
+				});
+			}
+		});
+		socket.on("move_error", function(msg) {
+			addMessage(msg, "red");
+		});
+		socket.on("join_error", function(msg) {
+			addMessage(msg, "red");
+		});	
+		socket.on("disconnect", function() {
+			addMessage("Disconnected", "red");
+		});
+		</script>
+	</body>
+</html>
