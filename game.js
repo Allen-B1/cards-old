@@ -52,7 +52,7 @@ class PresGame extends Game {
 	}
 
 	move(player, move) {
-		if(this.move == null) {
+		if(move == null) {
 			this.turn = (this.turn + 1) % this.players;
 			return null;
 		}
