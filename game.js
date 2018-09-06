@@ -7,7 +7,7 @@ class Game {
 	 * move - array of cards
 	 * move can be null; in which case this is a pass
 	 *
-	 * Returns: the error as a string or null if none or true if won
+	 * Returns: true if won null otherwise
 	 */
 	move(player, move) {
 		return null;
@@ -54,17 +54,17 @@ class PresGame extends Game {
 
 	move(player, move) {
 		if(this.turn !== player)
-			return "Out of turn";
+			throw "Out of turn";
 
 		if(move == null) {
 			this.turn = (this.turn + 1) % this.players;
 			return null;
 		}
 
-		// If cards are not in hand, return false
+		// If cards are not in hand
 		for(let card of move) {
 			if(this.hands[player].indexOf(card) === -1) {
-				return "Cannot summon cards out of thin air";
+				throw "Cannot summon cards out of thin air";
 			}
 		}
 
@@ -96,7 +96,7 @@ class PresGame extends Game {
 			super.move(player, move);
 			return null;
 		} else {
-			return "Bad play";
+			throw "Bad play";
 		}
 	}
 
