@@ -57,6 +57,7 @@ class PresGame extends Game {
 			throw "Out of turn";
 
 		if(move == null) {
+			this.passes.add(player);
 			this.turn = (this.turn + 1) % this.players;
 			return null;
 		}
@@ -72,6 +73,11 @@ class PresGame extends Game {
 		for(let card of move) {
 			var index = this.hands[player].indexOf(card);
 			this.hands[player].splice(index, 1);
+		}
+
+		// If everyone passes, bomb
+		if(this.passes.size() >= this.players) {
+			bomb();
 		}
 
 		if(PresGame.isValid(move, this.mode, this.stack)) {
@@ -101,6 +107,7 @@ class PresGame extends Game {
 	}
 
 	bomb() {
+		this.passes.clear();
 		this.mode = null;
 		this.stack = [];
 	}

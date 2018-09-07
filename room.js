@@ -1,4 +1,9 @@
 "use strict";
+/* Before the room starts, playerIds can change
+ * After it starts, they are fixed
+ *
+ * use this.names[playerId], this.sockets[playerId] etc.
+ */
 class Room {
 	constructor(id, gameclass, io) {
 		// readonly from outside
