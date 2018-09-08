@@ -114,6 +114,12 @@
 		socket.on("disconnect", function() {
 			addMessage("Disconnected", "red");
 		});
+
+		var winners = 0;
+		socket.on("win", function(player) {
+			winners++;
+			addMessage(names[player] + " won as #" + winners + "!", "lime");
+		});
 		</script>
 	</body>
 </html>

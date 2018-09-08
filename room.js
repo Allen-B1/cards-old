@@ -79,8 +79,11 @@ class Room {
 			// When move recieved
 			socket.on("move", (move) => {
 				try {
-					this.game.move(player, move);
+					var win = this.game.move(player, move);
 					this.emit("move", move, player);
+					if(win) {
+						this.emit("win", player);
+					}
 				} catch(err) {
 					socket.emit("move_error", move, String(err));
 				}
