@@ -28,6 +28,12 @@
 		var hand = null;
 		var me = null;
 
+		$('#m').keypress(function(e) {
+			if(e.keyCode === 13) {
+				$('#send').click();
+			}
+		});
+
 		$('#send').click(function func() {
 			var message = $('#m').val();
 			if(func.pname == null) {

@@ -58,7 +58,12 @@ class PresGame extends Game {
 
 		if(move == null) {
 			this.passes.add(player);
-			this.turn = (this.turn + 1) % this.players;
+			// If everyone passes, bomb
+			if(this.passes.size >= this.players) {
+				this.bomb();
+			} else { // Otherwise go to next player
+				this.turn = (this.turn + 1) % this.players;
+			}
 			return null;
 		}
 
@@ -69,17 +74,6 @@ class PresGame extends Game {
 			}
 		}
 
-		// Remove cards from hand
-		for(let card of move) {
-			var index = this.hands[player].indexOf(card);
-			this.hands[player].splice(index, 1);
-		}
-
-		// If everyone passes, bomb
-		if(this.passes.size() >= this.players) {
-			bomb();
-		}
-
 		if(PresGame.isValid(move, this.mode, this.stack)) {
 			this.stack.push(move);
 
@@ -88,9 +82,15 @@ class PresGame extends Game {
 			}
 
 			if(move[0][0] === "2") {
-				bomb();
-			} else {
+				this.bomb();
+			} else { // TODO: Add skip
 				this.turn = (this.turn + 1) % this.players;
+			}
+
+			// Remove cards from hand
+			for(let card of move) {
+				var index = this.hands[player].indexOf(card);
+				this.hands[player].splice(index, 1);
 			}
 
 			// If no more cards won
@@ -117,16 +117,19 @@ class PresGame extends Game {
 		if(move.length !== mode && mode !== null && move[0][0] !== "2")
 			return false;
 
-		// Cannot bomb multiple times
-		if(move[0][0] === "2" && move.length > 1)
-			return false;
-
 		// Check if all the card(s) have the same face value
 		for(var i = 1; i < move.length; i++) {
 			if(move[i][0] !== move[i - 1][0]) {
 				return false;
 			}
 		}
+
+		// Bombs
+		if(move[0][0] === "2") {
+			// Return true if one and only one bomb
+			return move.length === 1;
+		}
+
 		// Check if card(s) are greater/equal than previous card(s)
 		if(stack.length !== 0 && Cards.compare(move[0], stack[stack.length - 1][0]) < 0) {
 			return false;

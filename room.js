@@ -82,7 +82,7 @@ class Room {
 					this.game.move(player, move);
 					this.emit("move", move, player);
 				} catch(err) {
-					socket.emit("move_error", move, err);
+					socket.emit("move_error", move, String(err));
 				}
 			});
 		});
