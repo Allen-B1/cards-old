@@ -64,7 +64,7 @@ io.on("connection", (socket) => {
 				room.names[index] = null;
 				// If everyone left
 				if(room.names.every((v) => v === null)) {
-					clearRoom(room.id);
+					room.clear();
 				}
 			}
 		});

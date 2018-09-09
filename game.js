@@ -39,6 +39,19 @@ class Game {
 	constructor(players) {
 		this.turn = 0;
 		this.players = players;
+		this.winners = [];
+	}
+
+	_moveTurn(turns) {
+		// find # of winners in range
+		var extra = this.winners.reduce((acc, val) => {
+			if((this.turn + turns) % this.players > this.turn) { // if this.turn + turns is greater than turns
+				return acc + (val <= this.turn + turns && val > this.turn);
+			} else { // if it wraps
+				return acc + (val <= this.turn + turns || val > this.turn);
+			}
+		}, 0);
+		this.turn = (this.turn + turns + extra) % this.players;
 	}
 }
 
@@ -47,7 +60,6 @@ class PresGame extends Game {
 		super(players);
 		this.stack = [];
 		this.mode = null;
-		this.winners = [];
 		this.passes = new Set();
 		this.deal();
 	}
@@ -67,6 +79,9 @@ class PresGame extends Game {
 			return null;
 		}
 
+		// if not a pass clear passes
+		this.passes.clear();
+
 		// If cards are not in hand
 		for(let card of move) {
 			if(this.hands[player].indexOf(card) === -1) {
@@ -84,7 +99,7 @@ class PresGame extends Game {
 			if(move[0][0] === "2") {
 				this.bomb();
 			} else { // TODO: Add skip
-				this.turn = (this.turn + 1) % this.players;
+				this._moveTurn(1);
 			}
 
 			// Remove cards from hand
