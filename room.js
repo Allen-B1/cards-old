@@ -17,6 +17,11 @@ class Room {
 	}
 
 	clear() {
+		for(let socket of this.sockets) {
+			if(socket !== null)
+				socket.disconnect();
+		}
+
 		this.sockets = [];
 		this.names = [];
 		this.game = null;

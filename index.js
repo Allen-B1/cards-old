@@ -62,8 +62,8 @@ io.on("connection", (socket) => {
 			} else {
 				room.emit("player_left", room.names[index], index);
 				room.names[index] = null;
-				// If everyone left
-				if(room.names.every((v) => v === null)) {
+				// If not enough people to play
+				if(room.names.reduce((acc, val) => acc + (val !== null), 0) <= 1) {
 					room.clear();
 				}
 			}
