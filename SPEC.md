@@ -1,4 +1,10 @@
 # socketio events
+## Send: `player_join`
+```js
+socket.emit("player_join", name, roomId);
+```
+Join a room.
+
 ## Receive: `player_uid`
 ```js
 socket.on("player_uid", function(uid) {
@@ -13,8 +19,31 @@ socket.on("player_join", function(uid, name) {
 	...
 })
 ```
-
 Sent by the server when a player joins.
+
+
+## Recieve: `player_left`
+```js
+socket.on("player_left", function(uid) {
+	...
+});
+```
+Sent by the server when a player leaves.
+
+## Recieve: `join_error`
+```js
+socket.on("join_error", function(msg) {
+
+});
+```
+Sent by the server when an error occurs while joining (e.g. the game already started).
+
+## Send: `set_start`
+```js
+socket.on("start", function() {
+
+});
+```
 
 ## Recieve: `set_start`
 ```js
@@ -44,7 +73,6 @@ Sent by the server when the game starts. `uids` is an array of the uids in the g
 socket.on("game_move", function(playerIndex, move) {
 	...
 });
-```
 Sent by the server when a player has made a move.
 
 ## Send: `game_move`
@@ -56,7 +84,37 @@ Make a move.
 ## Recieve: `game_error`
 ```js
 socket.on("game_error", function(error) {
-
+	...
 });
 ```
 Sent by the server when the player has made an error. (e.g. Bad play, Out of turn)
+
+## Recieve: `game_win`
+```js
+socket.on("game_win", function(uid) {
+
+});
+```
+Sent by the server when a player "wins".
+
+## Recieve `game_end`
+```
+socket.on("game_end", function() {
+	...
+});
+```
+Send by the server when the game ends.
+
+## Send: `chat`
+```
+socket.emit("chat", msg);
+```
+Send a message.
+
+## Recieve: `chat`
+```
+socket.on("chat", function(msg, uid) {
+	...
+});
+```
+Sent by the server when a chat message is sent.
