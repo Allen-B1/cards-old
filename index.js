@@ -24,7 +24,7 @@ var rooms = {};
 const io = require('socket.io')(server);
 
 io.on("connection", (socket) => {
-	socket.on("player", function(name, roomId) {
+	socket.on("player_join", function(name, roomId) {
 		socket.join(roomId);
 		if(!(roomId in rooms)) 
 			rooms[roomId] = new Room();
@@ -37,7 +37,8 @@ io.on("connection", (socket) => {
 			return;
 		}
 
-		socket.to(roomId).emit("player_join", uid, name);
+		socket.emit("player_uid", uid);
+		io.to(roomId).emit("player_join", uid, name);
 
 		// Handling chat
 		socket.on("chat", function(msg) {
@@ -80,7 +81,7 @@ io.on("connection", (socket) => {
 				}
 			});
 
-			socket.emit("game_start", playerIndex, hands, Object.keys(room.names));
+			socket.emit("game_start", Object.keys(room.names), hands);
 		});
 
 		socket.on("disconnect", function() {
