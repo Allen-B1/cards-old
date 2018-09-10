@@ -23,10 +23,10 @@
 		<script>
 		"use strict";
 		var socket = io();
-		var started = false;
-		var names = [];
-		var hand = null;
-		var me = null;
+		var names = {};
+		var hand = [];
+		var uids = null;
+		var uid = null;
 
 		$('#m').keypress(function(e) {
 			if(e.keyCode === 13) {
@@ -37,17 +37,16 @@
 		$('#send').click(function func() {
 			var message = $('#m').val();
 			if(func.pname == null) {
-				socket.emit('player', message, 'game');
-				func.pname = message;
+				socket.emit('player_join', message, 'game');
 				addMessage("Your name is " + func.pname);
 			} else {
-				if(message.toLowerCase() == "start" && !started) {
+				if(message.toLowerCase() == "start") {
 					socket.emit("set_start");
 				} else if(message.toLowerCase().startsWith("move ") && started) {
 					var move = message.slice(5).toUpperCase().trim();
-					socket.emit("move", move.split(" "));
+					socket.emit("game_move", move.split(" "));
 				} else if(message.toLowerCase() === "pass" && started) {
-					socket.emit("move", null);
+					socket.emit("game_move", null);
 				} else if(message.toLowerCase() === "hand" && started) {
 					addMessage(hand.join(" "), "cyan");
 				} else {
@@ -56,48 +55,49 @@
 			}
 			$('#m').val('');
 		});
-		function addMessage(msg, color) {
+		function send(msg, color) {
 			$('#messages').append($('<li>').text(msg).css("color", color));
 			window.scrollTo(0, document.body.scrollHeight);
 		}
-		addMessage("What's your name?", "lime");
-		socket.on("chat", function(msg, player) {
-			addMessage(player + ": " + msg);
+		send("What's your name?", "lime");
+
+		socket.on('player_join', function(uid, name) {
+			names[uid] = name;
+			send(name + " joined", "lime");
 		});
-		socket.on('player_join', function(player){
-			addMessage(player + " joined", "lime");
+		socket.on('player_left', function(uid) {
+			send(names[uid] + " left", "lime");
 		});
-		socket.on('player_left', function(player) {
-			addMessage(player + " left", "lime");
-		});
-		socket.on('set_start', function(player, stats) {
-			addMessage(player + ": start (" + stats[0] + "/" + stats[1] + ")", "yellow");
+		socket.on("join_error", function(msg) {
+			send(msg, "red");
+		});	
+
+		socket.on('set_start', function(stats) {
+			send("start [" + stats[0] + "/" + stats[1] + "]", "yellow");
 		});
 
-		socket.on("game_start", function(id, pnames, hands) {
-			started = true;
-			names = pnames;
-			me = id;
-
-			addMessage("Game starting with " + names.join(", "), "lime");
-
-			hands[id].sort((a, b) => {
+		socket.on("game_start", function(names_, uids_, hands) {
+			uids = uids_;
+			names = names_;
+			const playerIndex = uids.indexOf(uid);
+			hand = hands[playerIndex];
+			hand.sort((a, b) => {
 				var valA = a.slice(0, -1);
 				var valB = b.slice(0, -1);
 				var key = {
 					2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,"J":11,"Q":12,"K":13,"A":14};
 				return key[valA] - key[valB];
 			});
-			hand = hands[id];
-			addMessage(hand.join(" "), "cyan");
-		});
+			send("Game starting!", "lime");
+		})
 
-		socket.on("move", function(move, player) {
+		socket.on("game_move", function(playerIndex, move) {
+			var playerUid = uids[playerIndex];
 			if(move === null) {
-				addMessage(names[player] + ": pass", "cyan");
+				send(names[playerUid] + ": pass", "cyan");
 			} else {
-				addMessage(names[player] + ": move " + move.join(" "), "cyan");
-				if(player === me) {
+				send(names[playerUid] + ": move " + move.join(" "), "cyan");
+				if(uids[playerIndex] == uid) {
 					move.forEach(function(card) {
 						var index = hand.indexOf(card);
 						hand.splice(index, 1);
@@ -105,21 +105,24 @@
 				}
 			}
 		});
-		socket.on("move_error", function(move, msg) {
-			addMessage(names[me] + ": " + (move === null ? "pass" : move.join(" ")) + ": " + msg, "red");
+
+		socket.on("game_error", function(error) {
+			send(error, "red");
 		});
-		socket.on("join_error", function(msg) {
-			addMessage(msg, "red");
-		});	
+
 		socket.on("disconnect", function() {
-			addMessage("Disconnected", "red");
+			send("Disconnected", "red");
+		});
+
+		socket.on("chat", function(msg, uid) {
+			send((names[uid] || ("#" + uid)) + ": " + msg);
 		});
 
 		var winners = 0;
-		socket.on("win", function(player) {
-			winners++;
-			addMessage(names[player] + " won as #" + winners + "!", "lime");
+		socket.on("game_win", function(uid) {
+			send(names[uid] + " won as #" + (++winners) + "!", "lime");
 		});
 		</script>
 	</body>
 </html>
+		});

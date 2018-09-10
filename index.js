@@ -79,7 +79,7 @@ io.on("connection", (socket) => {
 			});
 
 			// Give information to socket
-			socket.emit("game_start", Object.keys(room.names), hands);
+			socket.emit("game_start", room.names, Object.keys(room.names), hands);
 		});
 
 

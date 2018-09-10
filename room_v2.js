@@ -1,3 +1,4 @@
+"use strict";
 const EventEmitter = require("events");
 /* Manages players, force starts, and other things */
 class Room extends EventEmitter {

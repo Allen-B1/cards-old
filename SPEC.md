@@ -57,7 +57,7 @@ Sent by the server when a player sets start. `data[0]` is the number of people w
 
 ## Recieve: `game_start`
 ```js
-socket.on("game_start", function(uids, hands) {
+socket.on("game_start", function(names, uids, hands) {
 	// where uid is the player's uid
 	const playerIndex = uids.indexOf(uid);
 	const hand = hands[playerIndex];
@@ -67,6 +67,8 @@ socket.on("game_start", function(uids, hands) {
 Sent by the server when the game starts. `uids` is an array of the uids in the game.
 
 `hands` is an array that contains, for each player except for the one represented by `playerIndex`, an array of `null`s with the length of the number of cards.
+
+`names` is an object of names. Keys are uids and values are names.
 
 ## Recieve: `game_move`
 ```js
