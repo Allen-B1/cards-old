@@ -1,7 +1,4 @@
-# socketio events
-
-[TOC]
-
+# Docs
 ## Send: `player_join`
 ```js
 socket.emit("player_join", name, roomId);
@@ -76,6 +73,7 @@ Sent by the server when the game starts. `uids` is an array of the uids in the g
 socket.on("game_move", function(playerIndex, move) {
 	...
 });
+```
 Sent by the server when a player has made a move.
 
 ## Send: `game_move`
@@ -101,7 +99,7 @@ socket.on("game_win", function(uid) {
 Sent by the server when a player "wins".
 
 ## Recieve `game_end`
-```
+```js
 socket.on("game_end", function() {
 	...
 });
@@ -109,13 +107,13 @@ socket.on("game_end", function() {
 Send by the server when the game ends.
 
 ## Send: `chat`
-```
+```js
 socket.emit("chat", msg);
 ```
 Send a message.
 
 ## Recieve: `chat`
-```
+```js
 socket.on("chat", function(msg, uid) {
 	...
 });

@@ -24,7 +24,14 @@ var rooms = {};
 const io = require('socket.io')(server);
 
 io.on("connection", (socket) => {
+	let joined = false;
 	socket.on("player_join", function(name, roomId) {
+		if(joined) {
+			socket.emit("join_error", "Already joined");
+			return;
+		}
+		joined = true;
+
 		socket.join(roomId);
 		if(!(roomId in rooms)) 
 			rooms[roomId] = new Room();
@@ -32,7 +39,7 @@ io.on("connection", (socket) => {
 
 		const uid = room.addPlayer(name, socket);
 		if(uid == null) {
-			socket.emit("join_error", "Game already started!");
+			socket.emit("join_error", "Game already started");
 			socket.disconnect(false);
 			return;
 		}
@@ -40,39 +47,29 @@ io.on("connection", (socket) => {
 		socket.emit("player_uid", uid);
 		io.to(roomId).emit("player_join", uid, name);
 
-		// Handling chat
-		socket.on("chat", function(msg) {
-			io.to(roomId).emit("chat", msg, uid);
+		socket.on("disconnect", function() {
+			room.leave(uid);
+			io.to(roomId).emit("player_left", uid);
 		});
 
-		/// The following should be moved to room.js
 		/* When socket sets force start */
 		socket.on("set_start", function() {
 			if(room.setStart(uid)) {
 				room.game = new PresGame(room.nplayers);
 				room.start();
 			}
-			io.to(roomId).emit("set_start", [room.nstarted, room.nstartsRequired]);
-		});
-
-		socket.on("game_move", function(playerIndex, move) {
-			if(room.game !== null) {
-				try {
-					room.game.move(started)
-					io.to(roomId).emit("game_move", playerIndex, move);
-				} catch(err) {
-					socket.emit("game_error", String(err));
-				}
-			}
+			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
 		});
 
 		room.on("game_start", function() {
 			const playerIndex = Object.keys(room.names).indexOf(uid);
 
+			// Create hands
 			var hands = Array(room.nplayers);
 			hands.fill(null);
+			// For each hand
 			hands.forEach((hand, hand_player) => {
-				if(player === hand_player) {
+				if(player === hand_player) { // If can see
 					hands[hand_player] = room.game.hands[hand_player];
 				} else {
 					// Create an array of nulls of the correct length
@@ -81,12 +78,31 @@ io.on("connection", (socket) => {
 				}
 			});
 
+			// Give information to socket
 			socket.emit("game_start", Object.keys(room.names), hands);
 		});
 
-		socket.on("disconnect", function() {
-			room.leave(uid);
-			io.to(roomId).emit("player_left", uid);
+
+		socket.on("game_move", function(playerIndex, move) {
+			if(room.game !== null) {
+				try {
+					let won = room.game.move(started);
+					io.to(roomId).emit("game_move", playerIndex, move);
+					if(won) {
+						io.to(roomId).emit("game_win", uid);
+						// If everyone won except for one person, end the game
+						if(room.game.winners.length >= room.nplayers - 1) {
+							io.to(roomId).emit("game_end");
+						}
+					}
+				} catch(err) {
+					socket.emit("game_error", String(err));
+				}
+			}
+		});
+
+		socket.on("chat", function(msg) {
+			io.to(roomId).emit("chat", msg, uid);
 		});
 	});
 });

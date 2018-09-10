@@ -30,7 +30,7 @@ class Room extends EventEmitter {
 
 		this.starts.add(uid);
 
-		return this.nstarted >= this.nstartsRequired;
+		return this.nstarts >= this.nstartsRequired;
 	}
 
 	/* When start, should set game to something */
@@ -53,7 +53,7 @@ class Room extends EventEmitter {
 		return this.game !== null;
 	}
 
-	get nstarted() {
+	get nstarts() {
 		return this.starts.size;
 	}
 
