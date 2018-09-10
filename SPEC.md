@@ -1,4 +1,7 @@
 # socketio events
+
+[TOC]
+
 ## Send: `player_join`
 ```js
 socket.emit("player_join", name, roomId);
