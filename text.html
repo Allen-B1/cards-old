@@ -64,7 +64,7 @@
 		socket.on("chat", function(msg, player) {
 			addMessage(player + ": " + msg);
 		});
-		socket.on('player', function(player){
+		socket.on('player_join', function(player){
 			addMessage(player + " joined", "lime");
 		});
 		socket.on('player_left', function(player) {
@@ -74,7 +74,7 @@
 			addMessage(player + ": start (" + stats[0] + "/" + stats[1] + ")", "yellow");
 		});
 
-		socket.on("start", function(id, pnames, hands) {
+		socket.on("game_start", function(id, pnames, hands) {
 			started = true;
 			names = pnames;
 			me = id;

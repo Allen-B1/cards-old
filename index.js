@@ -2,7 +2,7 @@
 const http = require('http');
 const fs = require('fs');
 const gamelib = require("./game.js");
-const Room = require("./room.js");
+const Room = require("./room_v2.js");
 
 const server = http.createServer((req, res) => {
 	if(req.url == "/socket.io.js") {
@@ -27,50 +27,67 @@ io.on("connection", (socket) => {
 	socket.on("player", function(name, roomId) {
 		socket.join(roomId);
 		if(!(roomId in rooms)) 
-			rooms[roomId] = new Room(roomId, gamelib.PresGame, io);
+			rooms[roomId] = new Room();
 		const room = rooms[roomId];
 
-		if(room.addPlayer(name, socket) < 0) {
+		const uid = room.addPlayer(name, socket);
+		if(uid == null) {
 			socket.emit("join_error", "Game already started!");
 			socket.disconnect(false);
+			return;
 		}
+
+		socket.to(roomId).emit("player_join", uid, name);
 
 		// Handling chat
 		socket.on("chat", function(msg) {
-			let playerId = room.getPlayer(socket);
-			if(playerId >= 0)
-				room.emit("chat", msg, room.names[playerId]);
+			io.to(roomId).emit("chat", msg, uid);
 		});
-
 
 		/// The following should be moved to room.js
 		/* When socket sets force start */
 		socket.on("set_start", function() {
-			let playerId = room.getPlayer(socket);
-			if(playerId >= 0)
-				room.setStart(playerId);
+			if(room.setStart(uid)) {
+				room.game = new PresGame(room.nplayers);
+				room.start();
+			}
+			io.to(roomId).emit("set_start", [room.nstarted, room.nstartsRequired]);
 		});
 
-		socket.on("disconnect", function() {
-			var index = room.getPlayer(socket);
-			if(!room.started) {
-				room.emit("player_left", room.names[index], null);
-
-				room.sockets.splice(index, 1);
-				room.names.splice(index, 1);
-				room.started.splice(index, 1);
-			} else {
-				room.emit("player_left", room.names[index], index);
-				room.names[index] = null;
-				// If not enough people to play
-				if(room.names.reduce((acc, val) => acc + (val !== null), 0) <= 1) {
-					room.clear();
+		socket.on("game_move", function(playerIndex, move) {
+			if(room.game !== null) {
+				try {
+					room.game.move(started)
+					io.to(roomId).emit("game_move", playerIndex, move);
+				} catch(err) {
+					socket.emit("game_error", String(err));
 				}
 			}
 		});
+
+		room.on("game_start", function() {
+			const playerIndex = Object.keys(room.names).indexOf(uid);
+
+			var hands = Array(room.nplayers);
+			hands.fill(null);
+			hands.forEach((hand, hand_player) => {
+				if(player === hand_player) {
+					hands[hand_player] = room.game.hands[hand_player];
+				} else {
+					// Create an array of nulls of the correct length
+					hands[hand_player] = Array(room.game.hands[hand_player].length);
+					hands[hand_player].fill(null);
+				}
+			});
+
+			socket.emit("game_start", playerIndex, hands, Object.keys(room.names));
+		});
+
+		socket.on("disconnect", function() {
+			room.leave(uid);
+			io.to(roomId).emit("player_left", uid);
+		});
 	});
-
-
 });
 
 
