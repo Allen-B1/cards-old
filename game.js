@@ -63,6 +63,7 @@ class PresGame extends Game {
 	}
 
 	move(player, move) {
+		console.log(player, this.turn);
 		if(this.turn !== player)
 			throw "Out of turn";
 

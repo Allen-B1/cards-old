@@ -83,7 +83,8 @@ io.on("connection", (socket) => {
 		});
 
 
-		socket.on("game_move", function(playerIndex, move) {
+		socket.on("game_move", function(move) {
+			const playerIndex = Object.keys(room.names).indexOf(String(uid));
 			if(room.game !== null) {
 				try {
 					let won = room.game.move(playerIndex, move);
