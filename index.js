@@ -60,7 +60,8 @@ io.on("connection", (socket) => {
 			room.leave(uid);
 			room.removeListener("game_start", onGameStart);
 			io.to(roomId).emit("player_left", uid);
-			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
+			if(!room.started)
+				io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
 		});
 
 		/* When socket sets force start */

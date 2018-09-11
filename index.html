@@ -12,17 +12,7 @@ body {
 }
 main {
 	padding: 16px;
-	display: flex;
-	flex-direction: row;
-	align-items: stretch;
 }
-main div {
-	position: relative;
-}
-main div:first-child {
-	flex-grow: 1;
-}
-
 .card {
 	padding: 8px;
 	display:inline-block;
@@ -52,6 +42,8 @@ button:hover {
 button:active {
 	box-shadow: none;
 }
+
+
 #error {
 	display: none;
 	background: #F44336;
@@ -59,27 +51,38 @@ button:active {
 	padding: 8px 16px;
 	font-size: 16px;
 }
-#bottom {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	width: 100%;
+
+/* #room */
+#players {
+	background: #212121;
+	color: #FFF;
+	display: inline-block;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
+#players div {
+	padding: 8px;
+}
+
+/* #game */
 #player-name {
 	text-align: center;
+}
+#hand {
+	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 		</style>
 	</head>
 	<body>
 		<div id="error"></div>
 		<main>
-			<div>
-				<button id="start" class="inactive">1 / 2</button>
-				<div id="bottom">
-					<div id="hand"></div>
-					<div id="player-name"></div>
+			<div id="room">
+				<button id="start" class="inactive">0 / 0</button>
+				<div id="players">
 				</div>
+			</div>
+			<div id="game" style="display:none">
+				<div id="hand"></div>
+				<div id="player-name"></div>
 			</div>
 			<div id="chat">
 			</div>
@@ -96,6 +99,24 @@ button:active {
 				return div.style.display !== "none";
 			}
 
+			function hideError() {
+				var div = document.getElementById("error");
+				div.style.display = 'none';
+			}
+
+			function createCardDiv(card) {
+				var val = card.slice(0, -1);
+				var suit = card[card.length - 1];
+
+				var div = document.createElement("div");
+				div.classList.add("card");
+				div.appendChild(document.createTextNode(card));
+				if(suit === "H" || suit === "D") {
+					div.classList.add("red");
+				}
+				return div;
+			}
+
 			var name = prompt("What is your name?");
 			if(name === null || name === "") {
 				name = "Anonymous";
@@ -103,19 +124,29 @@ button:active {
 
 			socket = io();
 			socket.emit("player_join", name, "game");
-			document.getElementById("player-name").innerHTML = name;
 
 			var me = null;
+			var hands = null;
+			var names = {};
+			var uids = null;
 			socket.on("player_uid", function(uid) {
 				me = uid;
-			});	
+			});
+
+			socket.on("player_join", function(uid, name) {
+				names[uid] = name;
+				var playersDiv = document.getElementById("players");
+				var div = document.createElement("div");
+				div.appendChild(document.createTextNode(name));
+				playersDiv.appendChild(div);
+			});
 
 			socket.on("join_error", function(error) {
 				showError(error);
 			});
+
 			socket.on("disconnect", function() {
-				if(!hasError())
-					showError("Disconnected from server. Refresh the page.");
+				showError("Disconnected from server. Refresh the page.");
 			});
 
 			document.getElementById("start").addEventListener("click", function() {
@@ -128,8 +159,56 @@ button:active {
 				button.innerHTML = stats.join(" / ");
 			});
 
-			socket.on("game_start", function() {
-				
+			socket.on("game_start", function(names_, uids_, hands_) {
+				names = names_;
+				hands = hands_;
+				uids = uids_;
+				var playerIndex = uids.indexOf(me);
+
+				var roomDiv = document.getElementById("room");
+				roomDiv.style.display = "none";
+				var gameDiv = document.getElementById("game");
+				gameDiv.style.display = "block";
+
+				var handDiv = document.getElementById("hand");
+				var hand = hands_[playerIndex];
+				hand.sort((a, b) => {
+					var valA = a.slice(0, -1);
+					var valB = b.slice(0, -1);
+					var key = {
+						2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,"J":11,"Q":12,"K":13,"A":14};
+					return key[valA] - key[valB];
+				});
+				hand.forEach(function(card) {
+					var div = createCardDiv(card);
+					div.addEventListener("click", function() {
+						socket.emit("game_move", [this.innerHTML]);
+						console.log("Move ", [this.innerHTML]);
+					});
+					handDiv.appendChild(div);
+				});
+			});
+
+			socket.on("game_move", function(playerIndex, move) {
+				var mePlayerIndex = uids.indexOf(me);
+				if(playerIndex == mePlayerIndex) {
+					if(move !== null) {
+						move.forEach(function(card) {
+							var index = hands[playerIndex].indexOf(card);	
+							hands[playerIndex].splice(index, 1);
+							var handDiv = document.getElementById("hand");
+							handDiv.children[index].remove();
+						});
+					}
+				} else {
+					if(move !== null)
+						hands[playerIndex].splice(0, move.length);
+				}
+			});
+
+			socket.on("game_error", function(message) {
+				showError(message);
+				setTimeout(hideError, 2000);
 			});
 		</script>
 	</body>
