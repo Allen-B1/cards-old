@@ -5,14 +5,22 @@ const gamelib = require("./game.js");
 const Room = require("./room_v2.js");
 
 const server = http.createServer((req, res) => {
-	if(req.url == "/socket.io.js") {
-		res.writeHead(200, {"Content-Type": "text/javascript"});	
-		res.write(fs.readFileSync("socket.io.js"));
-	} else {
-		res.writeHead(200, {"Content-Type": "text/html"});
-		res.write(fs.readFileSync("text.html"));
+	switch(req.url) {
+		case "/socket.io.js":
+			res.writeHead(200, {"Content-Type": "text/javascript"});	
+			res.write(fs.readFileSync("socket.io.js"));
+			res.end();
+			break;
+		case "/text":			
+			res.writeHead(200, {"Content-Type": "text/html"});
+			res.write(fs.readFileSync("text.html"));
+			res.end();
+			break;
+		default:
+			res.writeHead(200, {"Content-Type": "text/html"});
+			res.write(fs.readFileSync("index.html"));
+			res.end();
 	}
-	res.end();
 
 }); 
 server.listen(8000, () => {
@@ -46,22 +54,26 @@ io.on("connection", (socket) => {
 
 		socket.emit("player_uid", uid);
 		io.to(roomId).emit("player_join", uid, name);
+		io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
 
 		socket.on("disconnect", function() {
 			room.leave(uid);
+			room.removeListener("game_start", onGameStart);
 			io.to(roomId).emit("player_left", uid);
+			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
 		});
 
 		/* When socket sets force start */
 		socket.on("set_start", function() {
-			if(room.setStart(uid)) {
+			let started = room.setStart(uid);
+			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
+			if(started) {
 				room.game = new gamelib.PresGame(room.nplayers);
 				room.start();
 			}
-			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
 		});
 
-		room.on("game_start", function() {
+		function onGameStart() {
 			const playerIndex = Object.keys(room.names).indexOf(String(uid));
 
 			// Create hands
@@ -80,7 +92,8 @@ io.on("connection", (socket) => {
 
 			// Give information to socket
 			socket.emit("game_start", room.names, Object.keys(room.names).map(x => Number(x)), hands);
-		});
+		}
+		room.on("game_start", onGameStart);
 
 
 		socket.on("game_move", function(move) {

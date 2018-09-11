@@ -1,7 +1,58 @@
-<!-- UNUSED -->
-<script src="/socket.io.js"></script>
-<script>
-const socket = io();
-</script>
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="/socket.io.js"></script>
+		<style>
+.card {
+	padding: 8px;
+	display:inline-block;
+	background: #455A64;
+	color: #FFF;
+}
+.card.red {
+	background: #F44336;
+}
+button {
+	background: #F44336;
+	color: #FFF;
+	padding: 8px 16px;
+	border: 0;
+	outline: 0;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+button.inactive {
+	background: #BDBDBD;
+	color: rgba(0,0,0,0.8);
+}
+button:hover {
+	box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+button:active {
+	box-shadow: none;
+}
+		</style>
+	</head>
+	<body>
+		<button id="start">1 / 2</button>
+		<div id="hand"><div>
+		<script>
+			var name = prompt("What is your name?");
+			if(name === null || name === "") {
+				name = "Anonymous";				
+			}
 
+			socket = io();
+			socket.emit("player_join", name, "game");
 
+			var me = null;
+			socket.on("player_uid", function(uid) {
+				me = uid;
+			});	
+
+			socket.on("set_start", function(stats) {
+				var button = document.getElementById("start");
+				button.innerHTML = stats.join(" / ");
+			});
+		</script>
+	</body>
+</html>
