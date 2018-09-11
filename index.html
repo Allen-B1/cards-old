@@ -8,7 +8,7 @@ body {
 	padding: 0;
 	margin: 0;
 	background: #FAFAFA;
-	font-size: 13px;
+	font-size: 16px;
 }
 main {
 	padding: 16px;
@@ -25,12 +25,12 @@ main {
 button {
 	background: #8BC34A;
 	color: #FFF;
-	padding: 8px 16px;
+	padding: 16px 32px;
 	border: 0;
 	outline: 0;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 	cursor: pointer;
-	font-size: 14px;
+	font-size: 20px;
 	text-transform: uppercase;
 }
 button.inactive {
@@ -53,14 +53,27 @@ button:active {
 }
 
 /* #room */
+#room {
+	text-align: center;
+	max-width: 700px;
+	margin: auto;
+	padding-top: 10%;
+	vertical-align: top;
+}
+#start {
+	margin-left: 16px;
+	text-align: center;
+}
 #players {
-	background: #212121;
+	background: #616161;
 	color: #FFF;
-	display: inline-block;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+	margin-right: 16px;
+	display: inline-block;
+	min-width: 200px;
 }
 #players div {
-	padding: 8px;
+	padding: 16px;
 }
 
 /* #game */
@@ -68,7 +81,19 @@ button:active {
 	text-align: center;
 }
 #hand {
+	position: absolute;
+	bottom: 16px;
+	left: 16px; right: 16px;
+	display: flex;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+#hand * {
+	flex-grow: 1;
+}
+#moves {
+	height: 256px;
+	overflow: auto;
+	width: 64px;
 }
 		</style>
 	</head>
@@ -76,12 +101,14 @@ button:active {
 		<div id="error"></div>
 		<main>
 			<div id="room">
-				<button id="start" class="inactive">0 / 0</button>
 				<div id="players">
+					<div><b>Players</b></div>
 				</div>
+				<button id="start" class="inactive">0 / 0</button>
 			</div>
 			<div id="game" style="display:none">
 				<div id="hand"></div>
+				<div id="moves"></div>
 				<div id="player-name"></div>
 			</div>
 			<div id="chat">
@@ -137,8 +164,14 @@ button:active {
 				names[uid] = name;
 				var playersDiv = document.getElementById("players");
 				var div = document.createElement("div");
+				div.id = "player-" + uid;
 				div.appendChild(document.createTextNode(name));
 				playersDiv.appendChild(div);
+			});
+
+			socket.on("player_left", function(uid) {
+				delete names[uid];
+				document.getElementById("player-" + uid).remove();
 			});
 
 			socket.on("join_error", function(error) {
@@ -185,11 +218,19 @@ button:active {
 						socket.emit("game_move", [this.innerHTML]);
 						console.log("Move ", [this.innerHTML]);
 					});
+					div.style.cursor = "pointer";
 					handDiv.appendChild(div);
 				});
 			});
 
 			socket.on("game_move", function(playerIndex, move) {
+				if(move !== null) {
+					var moveDiv = document.getElementById("moves");
+					move.forEach(function(card) {
+						moveDiv.appendChild(createCardDiv(card));
+					});
+				}
+
 				var mePlayerIndex = uids.indexOf(me);
 				if(playerIndex == mePlayerIndex) {
 					if(move !== null) {
