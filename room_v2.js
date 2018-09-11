@@ -3,14 +3,15 @@ const EventEmitter = require("events");
 /* Manages players, force starts, and other things */
 class Room extends EventEmitter {
 	constructor() {
+		super();
 		this.names = {};
 		this.starts = new Set();
 		this.game = null;
 	}
 
-	_ctr = 0;
 	new_id() {
-		return _ctr++;
+		this._ctr = this._ctr | 0;
+		return this._ctr++;
 	}
 
 	// uid = unique id, indexid is created when game starts
@@ -19,7 +20,7 @@ class Room extends EventEmitter {
 			return null;
 
 		var uid = this.new_id();
-		this.names[uid] = 0;
+		this.names[uid] = name;
 		
 		return uid;
 	}
@@ -39,6 +40,7 @@ class Room extends EventEmitter {
 		this.emit("game_start");
 	}
 
+	// TODO
 	clear() {
 		this.emit("clear");
 		this.names = {};
@@ -68,3 +70,5 @@ class Room extends EventEmitter {
 		this.starts.delete(uid);
 	}
 }
+
+module.exports = Room;

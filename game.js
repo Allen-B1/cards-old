@@ -31,8 +31,6 @@ class Game {
 			this.hands[player].push(deck.pop());
 			player = (player + 1) % this.players;
 		}
-
-		this.turn = 0;
 	}
 
 	/* Creates a new game. Players is the number of players */

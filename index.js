@@ -55,21 +55,21 @@ io.on("connection", (socket) => {
 		/* When socket sets force start */
 		socket.on("set_start", function() {
 			if(room.setStart(uid)) {
-				room.game = new PresGame(room.nplayers);
+				room.game = new gamelib.PresGame(room.nplayers);
 				room.start();
 			}
 			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
 		});
 
 		room.on("game_start", function() {
-			const playerIndex = Object.keys(room.names).indexOf(uid);
+			const playerIndex = Object.keys(room.names).indexOf(String(uid));
 
 			// Create hands
 			var hands = Array(room.nplayers);
 			hands.fill(null);
 			// For each hand
 			hands.forEach((hand, hand_player) => {
-				if(player === hand_player) { // If can see
+				if(playerIndex === hand_player) { // If can see
 					hands[hand_player] = room.game.hands[hand_player];
 				} else {
 					// Create an array of nulls of the correct length
@@ -79,14 +79,14 @@ io.on("connection", (socket) => {
 			});
 
 			// Give information to socket
-			socket.emit("game_start", room.names, Object.keys(room.names), hands);
+			socket.emit("game_start", room.names, Object.keys(room.names).map(x => Number(x)), hands);
 		});
 
 
 		socket.on("game_move", function(playerIndex, move) {
 			if(room.game !== null) {
 				try {
-					let won = room.game.move(started);
+					let won = room.game.move(playerIndex, move);
 					io.to(roomId).emit("game_move", playerIndex, move);
 					if(won) {
 						io.to(roomId).emit("game_win", uid);

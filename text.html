@@ -36,19 +36,18 @@
 
 		$('#send').click(function func() {
 			var message = $('#m').val();
-			if(func.pname == null) {
+			if(uid === null) {
 				socket.emit('player_join', message, 'game');
-				addMessage("Your name is " + func.pname);
 			} else {
 				if(message.toLowerCase() == "start") {
 					socket.emit("set_start");
-				} else if(message.toLowerCase().startsWith("move ") && started) {
+				} else if(message.toLowerCase().startsWith("move ")) {
 					var move = message.slice(5).toUpperCase().trim();
 					socket.emit("game_move", move.split(" "));
-				} else if(message.toLowerCase() === "pass" && started) {
+				} else if(message.toLowerCase() === "pass") {
 					socket.emit("game_move", null);
-				} else if(message.toLowerCase() === "hand" && started) {
-					addMessage(hand.join(" "), "cyan");
+				} else if(message.toLowerCase() === "hand") {
+					send(hand.join(" "), "cyan");
 				} else {
 					socket.emit("chat", message);
 				}
@@ -60,6 +59,10 @@
 			window.scrollTo(0, document.body.scrollHeight);
 		}
 		send("What's your name?", "lime");
+
+		socket.on("player_uid", function(uid_) {
+			uid = uid_;
+		});
 
 		socket.on('player_join', function(uid, name) {
 			names[uid] = name;
@@ -125,4 +128,3 @@
 		</script>
 	</body>
 </html>
-		});
