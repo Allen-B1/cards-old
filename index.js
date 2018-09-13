@@ -91,6 +91,11 @@ io.on("connection", (socket) => {
 				}
 			});
 
+			room.uidsToIndexes = Array.from(Object.keys(room.names).entries()).reduce((acc, entry) => {
+				acc[entry[1]] = entry[0];
+				return acc;
+			}, {});
+
 			// Give information to socket
 			socket.emit("game_start", room.names, Object.keys(room.names).map(x => Number(x)), hands);
 		}
