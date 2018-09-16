@@ -167,7 +167,6 @@ button:active {
 			var me = null;
 			var hands = null;
 			var names = {};
-			var uids = null;
 			socket.on("player_uid", function(uid) {
 				me = uid;
 			});
@@ -204,11 +203,9 @@ button:active {
 				button.innerHTML = stats.join(" / ");
 			});
 
-			socket.on("game_start", function(names_, uids_, hands_) {
+			socket.on("game_start", function(names_, hands_) {
 				names = names_;
 				hands = hands_;
-				uids = uids_;
-				var playerIndex = uids.indexOf(me);
 
 				var roomDiv = document.getElementById("room");
 				roomDiv.style.display = "none";
@@ -216,7 +213,7 @@ button:active {
 				gameDiv.style.display = "block";
 
 				var handDiv = document.getElementById("hand");
-				var hand = hands_[playerIndex];
+				var hand = hands[me];
 				hand.sort((a, b) => {
 					var valA = a.slice(0, -1);
 					var valB = b.slice(0, -1);
@@ -239,7 +236,7 @@ button:active {
 				socket.emit("game_move", null);
 			});
 
-			socket.on("game_move", function(playerIndex, move) {
+			socket.on("game_move", function(player, move) {
 				if(move !== null) {
 					var moveDiv = document.getElementById("moves");
 					move.forEach(function(card) {
@@ -247,19 +244,18 @@ button:active {
 					});
 				}
 
-				var mePlayerIndex = uids.indexOf(me);
-				if(playerIndex == mePlayerIndex) {
+				if(player === me) {
 					if(move !== null) {
 						move.forEach(function(card) {
-							var index = hands[playerIndex].indexOf(card);	
-							hands[playerIndex].splice(index, 1);
+							var index = hands[player].indexOf(card);	
+							hands[player].splice(index, 1);
 							var handDiv = document.getElementById("hand");
 							handDiv.children[index].remove();
 						});
 					}
 				} else {
 					if(move !== null)
-						hands[playerIndex].splice(0, move.length);
+						hands[player].splice(0, move.length);
 				}
 			});
 

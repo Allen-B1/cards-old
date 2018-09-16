@@ -46,6 +46,7 @@ class Room extends EventEmitter {
 		this.names = {};
 		this.starts.clear();
 		this.started = false;
+		this.game = null;
 	}
 
 	get nplayers() {

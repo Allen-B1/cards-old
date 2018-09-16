@@ -16,40 +16,39 @@ class Game {
 	/* Deal cards. To be used internally. Creates this.hands */
 	deal() {
 		// Create a hand for each player
-		this.hands = Array(this.players);
-		this.hands.fill(null);
-		this.hands.forEach((hand, player) => {
-			this.hands[player] = [];
-		});
+		this.hands = {};
+		for(let uid in this.turns) {
+			this.hands[uid] = [];
+		}
+		console.log(this.hands);
 
 		// Deal out deck
 		// TODO: Jokers
 		var deck = Cards.createFullDeck();
 		Cards.shuffle(deck);
-		var player = 0;
+
+		var index = 0;
 		while(deck.length) {
-			this.hands[player].push(deck.pop());
-			player = (player + 1) % this.players;
+			this.hands[this.turns[index]].push(deck.pop());
+			index = (index + 1) % this.nplayers;
 		}
 	}
 
-	/* Creates a new game. Players is the number of players */
-	constructor(players) {
-		this.turn = 0;
-		this.players = players;
+	/* Creates a new game.*/
+	constructor(uids) {
+		// specifies order of turns
+		this.turns = uids;
+		this.turn = uids[0];
 		this.winners = [];
 	}
 
-	_moveTurn(turns) {
-		// find # of winners in range
-		var extra = this.winners.reduce((acc, val) => {
-			if((this.turn + turns) % this.players > this.turn) { // if this.turn + turns is greater than turns
-				return acc + (val <= this.turn + turns && val > this.turn);
-			} else { // if it wraps
-				return acc + (val <= this.turn + turns || val > this.turn);
-			}
-		}, 0);
-		this.turn = (this.turn + turns + extra) % this.players;
+	/* Return number of players left in the game */
+	get nplayers() {
+		return this.turns.length;
+	}	
+
+	_moveTurn(nturns) {
+		this.turn = this.turns[this.turns.indexOf(this.turn) + nturns];
 	}
 }
 
@@ -70,10 +69,10 @@ class PresGame extends Game {
 		if(move == null) {
 			this.passes.add(player);
 			// If everyone passes, bomb
-			if(this.passes.size >= this.players) {
+			if(this.passes.size >= this.nplayers) {
 				this.bomb();
 			} else { // Otherwise go to next player
-				this.turn = (this.turn + 1) % this.players;
+				this._moveTurn(1);
 			}
 			return null;
 		}

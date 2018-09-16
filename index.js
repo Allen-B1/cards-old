@@ -69,50 +69,40 @@ io.on("connection", (socket) => {
 			let started = room.setStart(uid);
 			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
 			if(started) {
-				room.game = new gamelib.PresGame(room.nplayers);
+				room.game = new gamelib.PresGame(Object.keys(room.names));
 				room.start();
 			}
 		});
 
 		function onGameStart() {
-			const playerIndex = Object.keys(room.names).indexOf(String(uid));
-
-			// Create hands
-			var hands = Array(room.nplayers);
-			hands.fill(null);
+			var hands = {};
 			// For each hand
-			hands.forEach((hand, hand_player) => {
-				if(playerIndex === hand_player) { // If can see
-					hands[hand_player] = room.game.hands[hand_player];
+			for(var player in room.names) {
+				if(player === uid) {
+					hands[player] = room.game.hands[player];
 				} else {
-					// Create an array of nulls of the correct length
-					hands[hand_player] = Array(room.game.hands[hand_player].length);
-					hands[hand_player].fill(null);
+					hands[player] = Array(room.game.hands[player].length);
+					hands[player].fill(null);
 				}
-			});
-
-			room.uidsToIndexes = Array.from(Object.keys(room.names).entries()).reduce((acc, entry) => {
-				acc[entry[1]] = entry[0];
-				return acc;
-			}, {});
+			}
 
 			// Give information to socket
-			socket.emit("game_start", room.names, Object.keys(room.names).map(x => Number(x)), hands);
+			socket.emit("game_start", room.names, hands);
 		}
 		room.on("game_start", onGameStart);
 
 
 		socket.on("game_move", function(move) {
-			const playerIndex = Object.keys(room.names).indexOf(String(uid));
 			if(room.game !== null) {
 				try {
-					let won = room.game.move(playerIndex, move);
-					io.to(roomId).emit("game_move", playerIndex, move);
+					let won = room.game.move(uid, move);
+					io.to(roomId).emit("game_move", uid, move);
 					if(won) {
 						io.to(roomId).emit("game_win", uid);
 						// If everyone won except for one person, end the game
 						if(room.game.winners.length >= room.nplayers - 1) {
 							io.to(roomId).emit("game_end");
+							room.game.clear();
 						}
 					}
 				} catch(err) {
