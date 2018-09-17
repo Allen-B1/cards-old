@@ -22,7 +22,7 @@ class Game {
 	deal() {
 		// Create a hand for each player
 		this.hands = {};
-		for(let uid in this.players) {
+		for(let uid of this.players) {
 			this.hands[uid] = [];
 		}
 
@@ -91,17 +91,19 @@ class PresGame extends Game {
 		}
 
 		if(PresGame.isValid(move, this.mode, this.stack)) {
-			this.stack.push(move);
-
-			if(this.mode === null) {
-				this.mode = move.length;
-			}
+			Array.prototype.push.apply(this.stack, move);
 
 			// bombs bomb
 			if(move[0][0] === "2") {
 				this.bomb();
-			} else { // otherwise go to next player // TODO: Add skip
+			} else if(this.mode === 1 && move[0][0] === this.stack[this.stack.length - 1][0]) {
+				this.moveTurn(2);
+			} else { // otherwise go to next player
 				this.moveTurn(1);
+			}
+
+			if(this.mode === null) {
+				this.mode = move.length;
 			}
 
 			// Remove cards from hand

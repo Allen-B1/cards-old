@@ -21,7 +21,7 @@ class Room extends EventEmitter {
 
 	new_id() {
 		this._ctr = this._ctr | 0;
-		return String(this._ctr++);
+		return String(this._ctr++) + "u";
 	}
 
 	/* --- Players --- */

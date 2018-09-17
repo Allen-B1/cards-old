@@ -116,7 +116,6 @@ io.on("connection", (socket) => {
 			}
 		});
 
-
 		socket.on("chat", function(msg) {
 			io.to(roomId).emit("chat", msg, uid);
 		});
