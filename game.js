@@ -9,7 +9,12 @@ class Game {
 	 *
 	 * Returns: true if won null otherwise
 	 */
-	move(player, move) {
+	/*abstract*/ move(player, move) {
+		return null;
+	}
+
+	/* Remove a player */
+	/*abstract*/ remove(player) {
 		return null;
 	}
 
@@ -17,10 +22,9 @@ class Game {
 	deal() {
 		// Create a hand for each player
 		this.hands = {};
-		for(let uid in this.turns) {
+		for(let uid in this.players) {
 			this.hands[uid] = [];
 		}
-		console.log(this.hands);
 
 		// Deal out deck
 		// TODO: Jokers
@@ -29,55 +33,54 @@ class Game {
 
 		var index = 0;
 		while(deck.length) {
-			this.hands[this.turns[index]].push(deck.pop());
+			this.hands[this.players[index]].push(deck.pop());
 			index = (index + 1) % this.nplayers;
 		}
 	}
 
 	/* Creates a new game.*/
 	constructor(uids) {
-		// specifies order of turns
-		this.turns = uids;
-		this.turn = uids[0];
-		this.winners = [];
+		this.players = uids;
 	}
 
 	/* Return number of players left in the game */
 	get nplayers() {
-		return this.turns.length;
-	}	
-
-	_moveTurn(nturns) {
-		this.turn = this.turns[this.turns.indexOf(this.turn) + nturns];
+		return this.players.length;
 	}
 }
 
 class PresGame extends Game {
-	constructor(players) {
-		super(players);
-		this.stack = [];
-		this.mode = null;
-		this.passes = new Set();
+	constructor(uids) {
+		super(uids);
+		this.turn = uids[0]; // whose turn it is
+
+		this.stack = []; // current stack of cards
+		this.mode = null; // # of cards (e.g. singles, doubles, triples)
+		this.passes = new Set(); // # of passes
+
 		this.deal();
 	}
 
+	moveTurn(nturns) {
+		this.turn = this.players[(this.players.indexOf(this.turn) + nturns) % this.players.length];
+	}
+
 	move(player, move) {
-		console.log(player, this.turn);
 		if(this.turn !== player)
 			throw "Out of turn";
 
+		// Deal with passes
 		if(move == null) {
 			this.passes.add(player);
 			// If everyone passes, bomb
 			if(this.passes.size >= this.nplayers) {
 				this.bomb();
 			} else { // Otherwise go to next player
-				this._moveTurn(1);
+				this.moveTurn(1);
 			}
 			return null;
 		}
-
-		// if not a pass clear passes
+		// If not a pass clear passes
 		this.passes.clear();
 
 		// If cards are not in hand
@@ -94,10 +97,11 @@ class PresGame extends Game {
 				this.mode = move.length;
 			}
 
+			// bombs bomb
 			if(move[0][0] === "2") {
 				this.bomb();
-			} else { // TODO: Add skip
-				this._moveTurn(1);
+			} else { // otherwise go to next player // TODO: Add skip
+				this.moveTurn(1);
 			}
 
 			// Remove cards from hand
@@ -108,7 +112,7 @@ class PresGame extends Game {
 
 			// If no more cards won
 			if(this.hands[player].length === 0) {
-				this.winners.push(player);
+				this.remove(player);
 				return true;
 			}
 
@@ -117,6 +121,13 @@ class PresGame extends Game {
 		} else {
 			throw "Bad play";
 		}
+	}
+
+	remove(player) {
+		let index = this.players.indexOf(player);
+		if(index >= 0)
+			this.players.splice(index, 1);
+		return super.remove(player);
 	}
 
 	bomb() {

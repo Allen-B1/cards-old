@@ -75,13 +75,13 @@ io.on("connection", (socket) => {
 		});
 
 		function onGameStart() {
+			// Create hands		
 			var hands = {};
-			// For each hand
 			for(var player in room.names) {
 				if(player === uid) {
-					hands[player] = room.game.hands[player];
+					hands[player] = room.gameHands[player];
 				} else {
-					hands[player] = Array(room.game.hands[player].length);
+					hands[player] = Array(room.gameHands[player].length);
 					hands[player].fill(null);
 				}
 			}
@@ -93,23 +93,29 @@ io.on("connection", (socket) => {
 
 
 		socket.on("game_move", function(move) {
-			if(room.game !== null) {
-				try {
-					let won = room.game.move(uid, move);
-					io.to(roomId).emit("game_move", uid, move);
-					if(won) {
-						io.to(roomId).emit("game_win", uid);
-						// If everyone won except for one person, end the game
-						if(room.game.winners.length >= room.nplayers - 1) {
-							io.to(roomId).emit("game_end");
-							room.game.clear();
-						}
-					}
-				} catch(err) {
-					socket.emit("game_error", String(err));
+			if(!room.started) return;
+
+			try {
+				let won = room.move(uid, move);
+				io.to(roomId).emit("game_move", uid, move);
+				if(won) {
+					console.log("Won");
+					io.to(roomId).emit("game_win", uid);
+					room.leave(uid);
 				}
+			} catch(err) {
+				socket.emit("game_error", String(err));
 			}
 		});
+
+		room.on("player_left", function() {
+			// If everyone left except for one person, end the game
+			if(room.nplayers <= 1) {
+				io.to(roomId).emit("game_end");
+				room.clear();
+			}
+		});
+
 
 		socket.on("chat", function(msg) {
 			io.to(roomId).emit("chat", msg, uid);

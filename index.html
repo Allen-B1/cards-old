@@ -81,14 +81,18 @@ button:active {
 #player-name {
 	text-align: center;
 }
-#hand {
+#hand-div {
 	position: absolute;
 	bottom: 16px;
 	left: 16px; right: 16px;
 	display: flex;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
-#hand .card {
+#hand {
+	display: flex;
+	flex-grow: 1;
+}
+#hand-div .card {
 	flex-grow: 1;
 }
 #move {
@@ -117,7 +121,8 @@ button:active {
 				<button id="start" class="inactive">0 / 0</button>
 			</div>
 			<div id="game" style="display:none">
-				<div id="hand">
+				<div id="hand-div">
+					<div id="hand"></div>
 					<div id="move">PASS</div>
 				</div>
 				<div id="moves"></div>
@@ -163,6 +168,7 @@ button:active {
 
 			socket = io();
 			socket.emit("player_join", name, "game");
+			document.getElementById("player-name").appendChild(document.createTextNode(name));
 
 			var me = null;
 			var hands = null;
@@ -207,11 +213,13 @@ button:active {
 				names = names_;
 				hands = hands_;
 
+				// hide roomDiv and show gameDiv
 				var roomDiv = document.getElementById("room");
 				roomDiv.style.display = "none";
 				var gameDiv = document.getElementById("game");
 				gameDiv.style.display = "block";
 
+				// show hand
 				var handDiv = document.getElementById("hand");
 				var hand = hands[me];
 				hand.sort((a, b) => {
@@ -245,10 +253,13 @@ button:active {
 				}
 
 				if(player === me) {
+					// remove card from hand
 					if(move !== null) {
 						move.forEach(function(card) {
 							var index = hands[player].indexOf(card);	
+							// remove from array
 							hands[player].splice(index, 1);
+							// remove from dom
 							var handDiv = document.getElementById("hand");
 							handDiv.children[index].remove();
 						});
@@ -257,6 +268,11 @@ button:active {
 					if(move !== null)
 						hands[player].splice(0, move.length);
 				}
+			});
+
+			socket.on("game_win", function(player) {
+				// TODO
+				console.log(names[player] + " won!");
 			});
 
 			socket.on("game_error", function(message) {
