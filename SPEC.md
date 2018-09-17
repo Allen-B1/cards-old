@@ -40,10 +40,10 @@ Sent by the server when an error occurs while joining (e.g. the game already sta
 
 ## Send: `set_start`
 ```js
-socket.on("start", function() {
-
-});
+socket.emit("set_start");
 ```
+
+Analogous to clicking the start button.
 
 ## Recieve: `set_start`
 ```js
