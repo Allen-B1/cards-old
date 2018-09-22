@@ -47,6 +47,12 @@ class Room extends EventEmitter {
 		if(this.game) {
 			this.game.remove(uid);
 		}
+
+		if((this.nplayers <= 1 && this.started) || this.nplayers <= 0) {
+			if(this.started)
+				this.emit("game_end");
+			this.clear();
+		}
 	}
 
 
@@ -62,7 +68,12 @@ class Room extends EventEmitter {
 
 		this.starts.add(uid);
 
-		return this.nstarts >= this.nstartsRequired;
+		if(this.nstarts >= this.nstartsRequired) {
+			this.start();
+			return true;
+		}
+
+		return false;
 	}
 
 	get nstarts() {
@@ -88,7 +99,7 @@ class Room extends EventEmitter {
 		if(this.game) {
 			if(this.game.move(player, move)) {
 				this.winners.push(player);
-				delete this.names[player];
+				this.leave(player);
 				return true;
 			}
 			return false;

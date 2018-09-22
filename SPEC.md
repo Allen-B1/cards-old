@@ -40,14 +40,14 @@ Sent by the server when an error occurs while joining (e.g. the game already sta
 
 ## Send: `set_start`
 ```js
-socket.on("start", function() {
+socket.on("set_start", function() {
 
 });
 ```
 
 ## Recieve: `set_start`
 ```js
-socket.on("player_join", function(data) {
+socket.on("set_start", function(data) {
 	let nstarted = data[0];
 	let nrequired = data[1];
 	...

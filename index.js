@@ -32,49 +32,43 @@ var rooms = {};
 const io = require('socket.io')(server);
 
 io.on("connection", (socket) => {
-	let joined = false;
 	socket.on("player_join", function(name, roomId) {
-		if(joined) {
-			socket.emit("join_error", "Already joined");
-			return;
-		}
-		joined = true;
-
-		socket.join(roomId);
-		if(!(roomId in rooms)) 
-			rooms[roomId] = new Room();
-		const room = rooms[roomId];
-
-		const uid = room.addPlayer(name, socket);
-		if(uid == null) {
+		const room = rooms[roomId] = rooms[roomId] || new Room();
+		const uid = room.addPlayer(name);
+		if(uid === null) {
 			socket.emit("join_error", "Game already started");
-			socket.disconnect(false);
+			socket.disconnect();
 			return;
 		}
+		socket.join("game-" + roomId);
 
+		// If the player attempts to join again, fail
+		socket.removeAllListeners("player_join");
+		socket.on("player_join", function() {
+			socket.emit("join_error", "Already in game; cannot join twice");
+		});
+
+		const roomIo = io.to(roomId);
 		socket.emit("player_uid", uid);
-		io.to(roomId).emit("player_join", uid, name);
-		io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
+		roomIo.emit("player_join", uid, name);
+		roomIo.emit("set_start", [room.nstarts, room.nstartsRequired]);
 
+		var onStartListener;
 		socket.on("disconnect", function() {
+			room.removeListener("game_start", onStartListener);
 			room.leave(uid);
-			room.removeListener("game_start", onGameStart);
-			io.to(roomId).emit("player_left", uid);
 			if(!room.started)
-				io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
-		});
+				roomIo.emit("set_start", [room.nstarts, room.nstartsRequired]);
+		});	
 
-		/* When socket sets force start */
 		socket.on("set_start", function() {
-			let started = room.setStart(uid);
-			io.to(roomId).emit("set_start", [room.nstarts, room.nstartsRequired]);
-			if(started) {
-				room.game = new gamelib.PresGame(Object.keys(room.names));
-				room.start();
-			}
-		});
+			room.setStart(uid);
+			roomIo.emit("set_start", [room.nstarts, room.nstartsRequired]);
+		});	
 
-		function onGameStart() {
+		room.on("game_start", onStartListener = function() {
+			let game = room.game = room.game || new gamelib.PresGame(Object.keys(room.names));
+
 			// Create hands		
 			var hands = {};
 			for(var player in room.names) {
@@ -86,38 +80,28 @@ io.on("connection", (socket) => {
 				}
 			}
 
-			// Give information to socket
 			socket.emit("game_start", room.names, hands);
-		}
-		room.on("game_start", onGameStart);
+		});
 
-
-		socket.on("game_move", function(move) {
-			if(!room.started) return;
-
+		socket.on("game_move", function() {
 			try {
-				let won = room.move(uid, move);
-				io.to(roomId).emit("game_move", uid, move);
-				if(won) {
-					console.log("Won");
-					io.to(roomId).emit("game_win", uid);
-					room.leave(uid);
+				if(room.move(uid, move)) {
+					roomIo.emit("game_move", uid, move);
+					roomIo.emit("game_win", uid);
+				} else {
+					roomIo.emit("game_move", uid, move);
 				}
 			} catch(err) {
-				socket.emit("game_error", String(err));
+				roomIo.emit("game_error", String(err));
 			}
 		});
 
-		room.on("player_left", function() {
-			// If everyone left except for one person, end the game
-			if(room.nplayers <= 1) {
-				io.to(roomId).emit("game_end");
-				room.clear();
-			}
+		room.on("player_left", function(player) {
+			roomIo.emit("player_left", player);
 		});
 
-		socket.on("chat", function(msg) {
-			io.to(roomId).emit("chat", msg, uid);
+		room.on("chat", function(msg) {
+			roomIo.emit("chat", msg, uid);
 		});
 	});
 });
